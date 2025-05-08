@@ -6,7 +6,7 @@ img = cv2.imread('sample.jpg')
 
 # Sharpen kernel
 kernel = np.array([[0, -1, 0],
-                   [-1, 6,-1],
+                   [-1, 5,-1],
                    [0, -1, 0]])
 
 # Áp dụng filter
