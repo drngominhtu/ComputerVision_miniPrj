@@ -13,10 +13,13 @@ contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMP
 
 # Vẽ tất cả contour
 img_contours = img
-cv.drawContours(img_contours, contours, -1, (0, 255, 0), 10)
+cv.drawContours(img_contours, contours, -1, (0, 255, 0), 10) #index -1 để vẽ tất cả contour
+hull = cv.drawContours(img_contours, contours, -1, (0, 255, 0), 10)
+
 
 cv.imshow('Original', img, )
 cv.imshow('Threshold', thresh)
 cv.imshow('Contours', img_contours)
+cv.imshow('Convex Hull', hull)
 cv.waitKey(0)
 cv.destroyAllWindows()
