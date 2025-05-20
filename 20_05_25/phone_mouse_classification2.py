@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from sklearn.cluster import KMeans
 
 def edge_detect(image_path):
     # Đọc ảnh
@@ -15,87 +14,98 @@ def edge_detect(image_path):
     # Canny edge detection
     edges = cv2.Canny(blurred, threshold1=30, threshold2=150)
     
-    return edges
+    # Áp dụng phép dãn (dilation) để làm rõ cạnh
+    kernel = np.ones((5,5), np.uint8)
+    dilated_edges = cv2.dilate(edges, kernel, iterations=1)
+    
+    return dilated_edges, img
 
-def classify_image(image_path):
-    # Tính toán contour
-    edges = edge_detect(image_path)
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+def classify_contour(contour):
+    """Phân loại một contour cụ thể là phone hay mouse"""
+    # Tính toán đặc trưng hình dạng
+    area = cv2.contourArea(contour)
+    perimeter = cv2.arcLength(contour, True)
+    
+    # Tính độ tròn (circularity)
+    circularity = 4 * np.pi * area / (perimeter * perimeter) if perimeter > 0 else 0
 
-    # Tách các contour theo kích thước và hình dạng
-    features = []
-    for cnt in contours:
-        x, y, w, h = cv2.boundingRect(cnt)
-        area = cv2.contourArea(cnt)
-        perimeter = cv2.arcLength(cnt, True)
-        features.append([x, y, w, h, area, perimeter])
+    # Tìm xấp xỉ đa giác
+    epsilon = 0.04 * perimeter
+    approx = cv2.approxPolyDP(contour, epsilon, True)
 
-    # Clustering
-    kmeans = KMeans(n_clusters=2)  # Chia thành 2 nhóm
-    labels = kmeans.fit_predict(features)
+    # Số đỉnh của đa giác xấp xỉ
+    vertices = len(approx)
 
-    # Xozeo dự đoán
-    if labels[0] == 0:
+    # Phân loại dựa trên độ tròn và số đỉnh
+    if circularity > 0.7 or (circularity > 0.5 and vertices > 6):
+        # Hình dạng tròn, khả năng cao là chuột
+        return "mouse"
+    elif vertices >= 4 and vertices <= 6 and circularity < 0.7:
+        # Hình dạng chữ nhật/vuông, khả năng cao là điện thoại
         return "phone"
     else:
-        return "mouse"
+        # Phân loại dựa trên độ tròn nếu không chắc chắn
+        return "mouse" if circularity > 0.5 else "phone"
 
-def show_result(image_path, prediction):
-    img = cv2.imread(image_path)  # Đọc ảnh từ đường dẫn được cung cấp
-    edges = edge_detect(image_path)
-
-    # Tìm contours từ edges
+def process_image(image_path, output_path=None):
+    # Tính toán contour
+    edges, img = edge_detect(image_path)
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Sắp xếp contours theo diện tích (lớn nhất trước)
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)
-    
-    # Lọc contours quá nhỏ
+    # Lọc contour quá nhỏ
     filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 1000]
     
-    # Vẽ tất cả contours lên ảnh với màu khác nhau
-    img_copy = img.copy()
-    for i, cnt in enumerate(filtered_contours[:5]):  # Chỉ vẽ 5 contours lớn nhất
-        color = (0, 255, 0) if i == 0 else (0, 0, 255)  # Contour lớn nhất màu xanh lá
-        cv2.drawContours(img_copy, [cnt], -1, color, 2)
-        
-        # Tính toán và hiển thị đặc trưng
-        x, y, w, h = cv2.boundingRect(cnt)
-        aspect_ratio = float(w) / h
-        area = cv2.contourArea(cnt)
-        
-        # Hiển thị thông tin
-        text = f"AR: {aspect_ratio:.2f}, Area: {area}"
-        cv2.putText(img_copy, text, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-        
-    # Hiển thị kết quả phân loại
-    result_text = f"Kết quả: {prediction.upper()}"
-    cv2.putText(img_copy, result_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+    # Tạo bản sao để vẽ lên
+    result_img = img.copy()
     
-    # Hiển thị ảnh với contours
-    cv2.imshow('Classification Result', img_copy)
+    # Xử lý từng contour
+    for contour in filtered_contours:
+        # Phân loại contour
+        prediction = classify_contour(contour)
+        
+        # Chọn màu border tùy theo loại
+        color = (0, 255, 0) if prediction == "phone" else (0, 0, 255)
+        
+        # Vẽ contour với màu đã chọn, độ dày 3 pixel
+        cv2.drawContours(result_img, [contour], -1, color, 3)
+        
+        # Tính toán bounding box
+        x, y, w, h = cv2.boundingRect(contour)
+        
+        # Vẽ bounding box
+        cv2.rectangle(result_img, (x, y), (x+w, y+h), color, 2)
+        
+        # Chuẩn bị label và vẽ
+        label = prediction.upper()
+        label_y = max(y - 10, 20)
+        label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
+        cv2.rectangle(result_img, (x, label_y - label_size[1] - 10), 
+                    (x + label_size[0] + 10, label_y), color, -1)
+        cv2.putText(result_img, label, (x + 5, label_y - 5), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
     
-    # Hiển thị ảnh edge
-    cv2.imshow('Edge Detection', edges)
+    # Lưu ảnh kết quả nếu đường dẫn output được cung cấp
+    if output_path:
+        cv2.imwrite(output_path, result_img)
     
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    return result_img
 
 def main():
     # Đường dẫn đến ảnh cần phân loại
-    image_path = "img7.jpg"  # Thay đổi tên file ảnh tại đây
+    image_path = "data/img1.jpg"
+    output_path = "output_classification.jpg"
     
-    # Phân loại ảnh
-    prediction = classify_image(image_path)
+    # Xử lý ảnh
+    result = process_image(image_path, output_path)
     
     # Hiển thị kết quả
-    print(f"Kết quả phân loại: {prediction}")
+    height, width = result.shape[:2]
+    scale_factor = min(1.0, 800 / max(height, width))  # Tối đa 800px
     
-    # Hiển thị ảnh với contour được đánh dấu
-    show_result(image_path, 0 if prediction == "phone" else 1)
+    result_resized = cv2.resize(result, (0, 0), fx=scale_factor, fy=scale_factor)
+    cv2.imshow('Classification Result', result_resized)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-# Chạy chương trình khi file được thực thi trực tiếp
 if __name__ == "__main__":
     main()
-
-
