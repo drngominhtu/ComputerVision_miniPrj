@@ -2,15 +2,11 @@ import cv2
 import numpy as np
 
 def edge_detect(image_path):
-    # Đọc ảnh
-    img = cv2.imread(image_path)
-    
-    # Tiền xử lý ảnh: chuyển đổi sang grayscale
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     
     # Tối ưu các pixel bằng GaussianBlur
-    blurred = cv2.GaussianBlur(gray_img, (5,5), 0)
-    
+    blurred = cv2.GaussianBlur(img, (5,5), 0)
+
     # Canny edge detection
     edges = cv2.Canny(blurred, threshold1=30, threshold2=150)
     
@@ -21,22 +17,19 @@ def edge_detect(image_path):
     return dilated_edges, img
 
 def classify_contour(contour):
-    """Phân loại một contour cụ thể là phone hay mouse"""
-    # Tính toán đặc trưng hình dạng
     area = cv2.contourArea(contour)
     perimeter = cv2.arcLength(contour, True)
     
     # Tính độ tròn (circularity)
     circularity = 4 * np.pi * area / (perimeter * perimeter) if perimeter > 0 else 0
 
-    # Tìm xấp xỉ đa giác
     epsilon = 0.04 * perimeter
     approx = cv2.approxPolyDP(contour, epsilon, True)
 
     # Số đỉnh của đa giác xấp xỉ
     vertices = len(approx)
 
-    # Phân loại dựa trên độ tròn và số đỉnh
+    # classify based on circularity and number of vertices =====================================================================================
     if circularity > 0.7 or (circularity > 0.5 and vertices > 6):
         # Hình dạng tròn, khả năng cao là chuột
         return "mouse"
@@ -46,7 +39,7 @@ def classify_contour(contour):
     else:
         # Phân loại dựa trên độ tròn nếu không chắc chắn
         return "mouse" if circularity > 0.5 else "phone"
-
+    #========================================================================================================================
 def process_image(image_path, output_path=None):
     # Tính toán contour
     edges, img = edge_detect(image_path)
