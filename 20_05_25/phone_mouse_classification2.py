@@ -4,7 +4,7 @@ import numpy as np
 def edge_detect(image_path):
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     
-    # Tối ưu các pixel bằng GaussianBlur
+    #GaussianBlur
     blurred = cv2.GaussianBlur(img, (5,5), 0)
 
     # Canny edge detection
@@ -15,6 +15,8 @@ def edge_detect(image_path):
     dilated_edges = cv2.dilate(edges, kernel, iterations=1)
     
     return dilated_edges, img
+
+
 
 def classify_contour(contour):
     area = cv2.contourArea(contour)
@@ -33,20 +35,22 @@ def classify_contour(contour):
     if circularity > 0.7 or (circularity > 0.5 and vertices > 6):
         # Hình dạng tròn, khả năng cao là chuột
         return "mouse"
-    elif vertices >= 4 and vertices <= 6 and circularity < 0.7:
+    elif vertices >= 4 and vertices <= 6 and circularity < 0.6:
         # Hình dạng chữ nhật/vuông, khả năng cao là điện thoại
         return "phone"
     else:
         # Phân loại dựa trên độ tròn nếu không chắc chắn
         return "mouse" if circularity > 0.5 else "phone"
     #========================================================================================================================
+
+
 def process_image(image_path, output_path=None):
     # Tính toán contour
     edges, img = edge_detect(image_path)
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     # Lọc contour quá nhỏ
-    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 1000]
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 30000]
     
     # Tạo bản sao để vẽ lên
     result_img = img.copy()
@@ -77,15 +81,17 @@ def process_image(image_path, output_path=None):
         cv2.putText(result_img, label, (x + 5, label_y - 5), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
     
-    # Lưu ảnh kết quả nếu đường dẫn output được cung cấp
-    if output_path:
-        cv2.imwrite(output_path, result_img)
+    # # Lưu ảnh kết quả nếu đường dẫn output được cung cấp
+    # if output_path:
+    #     cv2.imwrite(output_path, result_img)
     
     return result_img
 
+
+
 def main():
     # Đường dẫn đến ảnh cần phân loại
-    image_path = "data/img1.jpg"
+    image_path = "data/img4.jpg"
     output_path = "output_classification.jpg"
     
     # Xử lý ảnh
