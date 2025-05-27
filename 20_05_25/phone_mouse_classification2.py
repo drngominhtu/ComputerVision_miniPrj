@@ -91,7 +91,7 @@ def process_image(image_path, output_path=None):
 
 def main():
     # Đường dẫn đến ảnh cần phân loại
-    image_path = "data/img3.jpg"
+    image_path = "data/img1.jpg"
     output_path = "output_classification.jpg"
     
     # Xử lý ảnh
