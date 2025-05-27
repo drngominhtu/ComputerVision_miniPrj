@@ -32,15 +32,15 @@ def classify_contour(contour):
     vertices = len(approx)
 
     # classify based on circularity and number of vertices =====================================================================================
-    if circularity > 0.7 or (circularity > 0.5 and vertices > 6):
+    if circularity > 0.7 or (circularity > 0.6 and vertices > 8):
         # Hình dạng tròn, khả năng cao là chuột
         return "mouse"
-    elif vertices >= 4 and vertices <= 6 and circularity < 0.6:
+    elif vertices >= 4 and vertices <= 6 and circularity < 0.3:
         # Hình dạng chữ nhật/vuông, khả năng cao là điện thoại
         return "phone"
     else:
         # Phân loại dựa trên độ tròn nếu không chắc chắn
-        return "mouse" if circularity > 0.5 else "phone"
+        return "mouse" if circularity > 0.7 else "phone"
     #========================================================================================================================
 
 
@@ -49,8 +49,8 @@ def process_image(image_path, output_path=None):
     edges, img = edge_detect(image_path)
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Lọc contour quá nhỏ
-    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 30000]
+    # filter
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 1000]
     
     # Tạo bản sao để vẽ lên
     result_img = img.copy()
@@ -91,7 +91,7 @@ def process_image(image_path, output_path=None):
 
 def main():
     # Đường dẫn đến ảnh cần phân loại
-    image_path = "data/img4.jpg"
+    image_path = "data/img3.jpg"
     output_path = "output_classification.jpg"
     
     # Xử lý ảnh
@@ -99,7 +99,7 @@ def main():
     
     # Hiển thị kết quả
     height, width = result.shape[:2]
-    scale_factor = min(1.0, 800 / max(height, width))  # Tối đa 800px
+    scale_factor = min(1.0, 1000 / max(height, width))  # Tối đa 800px
     
     result_resized = cv2.resize(result, (0, 0), fx=scale_factor, fy=scale_factor)
     cv2.imshow('Classification Result', result_resized)
