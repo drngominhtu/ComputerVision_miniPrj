@@ -50,7 +50,7 @@ def process_image(image_path, output_path=None):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     # filter
-    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 1000]
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 30000]
     
     # Tạo bản sao để vẽ lên
     result_img = img.copy()
@@ -91,15 +91,13 @@ def process_image(image_path, output_path=None):
 
 def main():
     # Đường dẫn đến ảnh cần phân loại
-    image_path = "data/img1.jpg"
+    image_path = "data/img4.jpg"
     output_path = "output_classification.jpg"
     
-    # Xử lý ảnh
     result = process_image(image_path, output_path)
     
-    # Hiển thị kết quả
     height, width = result.shape[:2]
-    scale_factor = min(1.0, 1000 / max(height, width))  # Tối đa 800px
+    scale_factor = min(1.0, 1000 / max(height, width))
     
     result_resized = cv2.resize(result, (0, 0), fx=scale_factor, fy=scale_factor)
     cv2.imshow('Classification Result', result_resized)
