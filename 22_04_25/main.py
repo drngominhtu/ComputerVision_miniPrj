@@ -17,3 +17,9 @@ while(1):
     k = cv.waitKey(5) & 0xFF #waitkey is escape key
     if k == 27:
         break   
+
+
+#explaination:
+# This code captures video from the webcam, converts each frame to HSV color space,
+# and creates a mask to filter out black regions in the frame.
+# The result is displayed in three windows: the original frame, the mask, and the filtered result.

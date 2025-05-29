@@ -9,4 +9,4 @@ for line in lines:
     x1,y1,x2,y2 = line[0]
     cv.line(img,(x1,y1),(x2,y2),(0,255,0),2)
 
-cv.imwrite('img3_houghlines.jpg',img)
+cv.imwrite('img3.jpg',img)

@@ -17,7 +17,6 @@ def edge_detect(image_path):
     return dilated_edges, img
 
 
-
 def classify_contour(contour):
     area = cv2.contourArea(contour)
     perimeter = cv2.arcLength(contour, True)
